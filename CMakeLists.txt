@@ -8,6 +8,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_executable(embedded-simulator
   src/main.cpp
+  src/Ecu.cpp
+)
+
+target_include_directories(embedded-simulator PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
