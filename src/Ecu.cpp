@@ -59,47 +59,70 @@ void Ecu::print_motor_state() const{
 
 
 void Ecu::start_motor() {
-    if (motor_state_ == MotorStates::FAULT) {
-        std::cout << "Motor has a FAULT on startup, please inspect." << '\n';
+    if (!change_motor_state(MotorStates::STARTING)) {
         return;
     }
+    std::cout << "Motor is starting..." << '\n';
 
-    if (motor_state_ == MotorStates::OFF) {
-        std::cout << "Motor is starting..." << '\n';
-        change_motor_state(MotorStates::STARTING);
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-        std::this_thread::sleep_for(std::chrono::milliseconds(500));
-
-        change_motor_state(MotorStates::RUNNING);
-        std::cout << "Motor is running" << '\n';
-    } else {
-        std::cout << "Motor is already ON" << '\n';
+    if (!change_motor_state(MotorStates::RUNNING)) {
+        return;
     }
+    std::cout << "Motor is running" << '\n';
 }
 
 
 void Ecu::stop_motor() {
-    if (motor_state_ == MotorStates::FAULT) {
-        std::cout << "Motor has a FAULT on shutdown, please inspect." << '\n';
+    if (!change_motor_state(MotorStates::STOPPING)) {
         return;
     }
+    std::cout << "Motor is stopping..." << '\n';
 
-    if (motor_state_ != MotorStates::OFF) {
-        std::cout << "Motor is stopping..." << '\n';
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-        change_motor_state(MotorStates::STOPPING);
-
-        std::this_thread::sleep_for(std::chrono::milliseconds(500));
-
-        change_motor_state(MotorStates::OFF);
-        std::cout << "Motor is OFF" << '\n';
-    } else {
-        std::cout << "Motor is already OFF" << '\n';
+    if (!change_motor_state(MotorStates::OFF)) {
+        return;
     }
-
+    std::cout << "Motor is OFF" << '\n';
 }
 
 
-void Ecu::change_motor_state(MotorStates new_motor_state) {
-    motor_state_ = new_motor_state;
+bool Ecu::change_motor_state(MotorStates new_motor_state) {
+    if (is_transition_allowed(new_motor_state)) {
+        motor_state_ = new_motor_state;
+        return true;
+    }
+
+    std::cout << "Command is not valid in the current motor state" << '\n';
+    return false;
+}
+
+
+bool Ecu::is_transition_allowed(MotorStates new_motor_state) const {
+    if (motor_state_ == MotorStates::FAULT) {
+        return false;
+    }
+
+    if (motor_state_ == new_motor_state) {
+        return false;
+    }
+
+    if (motor_state_ == MotorStates::OFF && new_motor_state == MotorStates::STARTING) {
+        return true;
+    }
+
+    if (motor_state_ == MotorStates::STARTING && new_motor_state == MotorStates::RUNNING) {
+        return true;
+    }
+
+    if (motor_state_ == MotorStates::RUNNING && new_motor_state == MotorStates::STOPPING) {
+        return true;
+    }
+
+    if (motor_state_ == MotorStates::STOPPING && new_motor_state == MotorStates::OFF) {
+        return true;
+    }
+
+    return false;
 }

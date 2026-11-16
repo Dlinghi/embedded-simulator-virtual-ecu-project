@@ -43,5 +43,6 @@ private:
 
   void start_motor ();
   void stop_motor ();
-  void change_motor_state (MotorStates new_motor_state);
+  bool change_motor_state (MotorStates new_motor_state);
+  bool is_transition_allowed(MotorStates new_motor_state) const;
 };
